@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ============================================================= -->
+<!-- AUTHOR: lizeyi                                              -->
+<!-- THE BULID PROCESS COMPOSES BELOW STEPS:                       -->
+<!--    prepare: configure the environment automatically.          -->
+<!--    compile-main: compile the main source code.                -->
+<!--    compile-test: compile the test source code.                -->
+<!--    dist: build distribution units.                            -->
+<!--    deploy: deploy binary units to test environment.           -->
+<!--    bootstrap: bootstrap a database schema.                    -->
+<!--    load: load master and test data into database.             -->
+<!--    unittest: execute unit test and generate test report.      -->
+<!--    systest: execute integration test and generate report.     -->
+<!-- ============================================================= -->
+<project name="CreditAssist" default="auto-dist" basedir="..">
+	<property file="bin/build.properties" />
+	<property environment="env" />
+
+	<!-- define the output directory -->
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="tmp.dir" value="${build.dir}/tmp" />
+	<property name="installer.dir" value="${build.dir}/installer" />
+	<property name="dist.dir" value="${release.dir}" />
+
+	<!-- define the input directory -->
+	<property name="src.dir" value="src" />
+	<property name="src.main.dir" value="${src.dir}/main/java" />
+	<!--<property name="src.test.dir" value="${src.dir}/test" />-->
+	<property name="src.resource.dir" value="${src.dir}/main/resources" />
+	<property name="lib.dir" value="lib" />
+	<property name="www.dir" value="WebRoot" />
+	<property name="etc.dir" value="etc" />
+	<property name="metainf.dir" value="${tmp.dir}/META-INF" />
+	
+	<property name="build.log" value="build.log" />
+
+	<path id="project.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+		<pathelement path="${classes.dir}" />
+	</path>
+
+	<!-- task definition -->
+	<target name="init" depends="check-env,clean" description="Init projects.">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| I N I T                                               |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<mkdir dir="${tmp.dir}" />
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${installer.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+	<target name="check-env">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| C H E C K   E N V I R O N M E N T                     |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<condition property="java.version.not.compatible">
+			<not>
+				<or>
+					<contains string="${java.version}" substring="1.5." />
+					<contains string="${java.version}" substring="1.6." />
+					<contains string="${java.version}" substring="1.7." />
+				</or>
+			</not>
+		</condition>
+		<fail if="java.version.not.compatible" message="The version of Jdk should be 1.5.X or above, current is ${java.version}." />
+		<echo>Pass!</echo>
+	</target>
+
+	<target name="prepare" description="Prepare the development environment.">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| P R E P A R E   P R O J E C T                         |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<!-- prepare project, prepare web/app server -->
+	</target>
+
+
+	<target name="compile"  description="Compile main source code">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| C O M P I L E    M A I N                              |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<javac encoding="${javac.encoding}" destdir="${classes.dir}" failonerror="${javac.failonerror}" debug="${javac.debug}" classpathref="project.classpath"  nowarn="${javac.nowarn}" >
+			<src path="${src.main.dir}/" />
+		</javac>
+		<copy todir="${classes.dir}">
+			<fileset dir="${src.main.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+		<copy todir="${classes.dir}">
+			<fileset dir="${src.resource.dir}" />
+		</copy>
+	</target>
+
+
+
+	<target name="manifest">
+		<tstamp>
+			<format property="build.time" pattern="yyyy/MM/dd HH:mm:dd" />
+			<format property="build.number" pattern="yyyyMMdd" />
+		</tstamp>
+		<mkdir dir="${metainf.dir}" />
+		<manifest file="${metainf.dir}/MANIFEST.MF">
+			<attribute name="Built-By" value="${builder.name}" />
+			<attribute name="Built-Time" value="${build.time}" />
+			<section name="${project.name}">
+				<attribute name="Implementation-Title" value="${project.name}" />
+				<attribute name="Implementation-Version" value="${app.version}" />
+				<attribute name="Implementation-NightlyBuild-Version" value="${app.version}_${build.number}" />
+				<attribute name="Implementation-Vendor" value="${app.vendor}" />
+				<attribute name="Implementation-SVNVersion" value="${app.svnversion}" />
+			</section>
+		</manifest>
+
+		<echo>Project-Name: ${project.name}</echo>
+		<echo>Implementation-Vendor: ${app.vendor}</echo>
+		<echo>Implementation-Version: ${app.version}</echo>
+		<echo>Implementation-SVNVersion: ${app.svnversion}</echo>
+		<echo>Implementation-NightlyBuild-Version: ${app.version}_${build.number}</echo>
+	</target>
+	
+	<target name="dist" depends="manifest" description="Build deployable units.">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| B U I L D    D I S T    P A C K A G E                 |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<mkdir dir="${tmp.dir}/${project.name}/WEB-INF/lib" />
+		<mkdir dir="${tmp.dir}/${project.name}/helpDocument" />
+		<!--
+  		<mkdir dir="${tmp.dir}/${project.name}/META-INF" />
+	    <copy todir="${tmp.dir}/${project.name}/META-INF" file="${etc.dir}/tomcat/context.xml" />
+    	 -->
+		<copy todir="${tmp.dir}/${project.name}">
+			<fileset dir="${www.dir}" />
+		</copy>
+		<copy todir="${tmp.dir}/${project.name}/helpDocument">
+			<fileset dir="${etc.dir}" />
+		</copy>
+		<copy todir="${tmp.dir}/${project.name}/WEB-INF/lib" flatten="true">
+			<fileset dir="${lib.dir}">
+				<exclude name="dev/**/*.jar" />
+				<include name="**/*.jar" />
+			</fileset>
+		</copy>
+		<war destfile="${dist.dir}/${project.name}.war" webxml="${www.dir}/WEB-INF/web.xml" manifest="${tmp.dir}/META-INF/MANIFEST.MF">
+			<fileset dir="${tmp.dir}/${project.name}" />
+			<classes dir="${classes.dir}" />
+		</war>
+	</target>
+
+
+
+	<target name="deploy" description="Deploy application to server">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| D E P L O Y                                           |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<!-- antcall target="tomcat.deploy">
+			<param name="war.file" value="${dist.dir}/${project.name}.war"/>
+		</antcall -->
+		<delete file="${tomcat.home}/webapps/${project.name}.war">
+		</delete>
+		<delete dir="${tomcat.home}/webapps/${project.name}" includeemptydirs="true" />
+
+		<copy todir="${tomcat.home}/webapps" file="${dist.dir}/${project.name}.war" />
+	</target>
+
+	<target name="clean">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| C L E A N                                             |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<delete dir="${build.dir}" includeemptydirs="true" />
+	</target>
+
+	<!-- ============================================================ -->
+	<!--  AUTOMATICAL TARGETS                                         -->
+	<!-- ============================================================ -->
+
+	<target name="auto-load" description="Automatically load data to database">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| A U T O - L O A D                                     |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<antcall target="init" />
+		<antcall target="prepare" />
+		<antcall target="bootstrap">
+			<param name="bootstrap" value="true" />
+		</antcall>
+		<antcall target="load-master">
+			<param name="bootstrap" value="true" />
+		</antcall>
+	</target>
+
+	<target name="auto-dist" description="Build enterprise archive automatically.">
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| A U T O - D I S T R I B U T E                         |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<antcall target="init" />
+		<antcall target="prepare" />
+	   <!-- <antcall target="wsgen" /> -->
+		<!-- <antcall target="compile" />-->
+		<antcall target="dist" />
+		<antcall target="clean" />
+	</target>
+
+
+	<target name="auto-deploy" description="Automatically deploy application to app server.">
+		<record action="start" name="${build.log}" />
+		<tstamp>
+			<format property="build.time" pattern="yyyy/MM/dd HH:mm:dd" />
+		</tstamp>
+		<echo>+-------------------------------------------------------+</echo>
+		<echo>| BUILD TIME is ${build.time}                     |</echo>
+		<echo>+-------------------------------------------------------+</echo>
+
+		<antcall target="init" />
+		<antcall target="prepare" />
+     	<antcall target="compile" />		
+		<antcall target="dist" />
+		<antcall target="deploy" />
+		<record action="stop" name="${build.log}" />
+		<antcall target="clean" />
+	</target>
+
+</project>
+
+

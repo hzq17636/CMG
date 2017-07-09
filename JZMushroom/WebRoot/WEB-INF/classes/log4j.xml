@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+	<appender name="LOG_FILE" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="DatePattern" value="'.'yyyy-MM-dd" />
+		<param name="file" value="${catalina.base}/logs/JZMushroom/jz_mushroom.log" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d][%-5p][%c{1}][%X{systemID}][%X{sessionID}] %m%n" />
+		</layout>
+	</appender>
+
+	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+		<!--  param name="Target" value="System.out" / -->
+		<param name="Threshold" value="TRACE" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<!-- The default pattern: Date Priority [Category] Message\n -->
+			<param name="ConversionPattern" value="[%d][%-5p][%c{1}][%X{systemID}][%X{sessionID}] %m%n" />
+		</layout>
+	</appender>
+	
+	<!-- =============================================================== -->
+	<!-- PERF4j ........................................................ -->
+	<!-- =============================================================== -->
+	<!-- This file appender is used to output aggregated performance statistics -->
+	<appender name="perf4jAppender" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File"
+			value="${catalina.base}/logs/JZMushroom/perf/jz_mushroom.perf4j.log" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d][%t] %m%n" />
+		</layout>
+	</appender>
+
+	<logger name="org.perf4j.TimingLogger" additivity="false">
+		<level value="INFO" />
+		<appender-ref ref="perf4jAppender" />
+	</logger>
+	
+    
+    <!--  myBaties -->
+    <category name="org.springframework">
+        <priority value="WARN" />
+    </category>
+    <category name="java.sql.ResultSet">
+        <priority value="INFO" />
+    </category>
+	<category name="java.sql.Connection" >
+		<priority value="INFO" />
+	</category>
+	<category name="java.sql.Statement" >
+		<priority value="INFO" />
+	</category>	
+	<category name="java.sql.PreparedStatement">
+		<priority value="DEBUG" />
+	</category>
+	<root>
+		<priority value="DEBUG" />
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="LOG_FILE" />
+	</root>
+</log4j:configuration>
